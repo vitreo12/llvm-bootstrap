@@ -17,7 +17,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
 $targets = "X86;AArch64;WebAssembly"
 $generator = "Ninja"
 $llvmSourceDir = Join-Path $SourceDir "llvm"
-$isWindows = $env:RUNNER_OS -eq "Windows" -or $IsWindows
+$runningOnWindows = $env:RUNNER_OS -eq "Windows" -or $IsWindows
 
 $configureArgs = @(
     "-S", $llvmSourceDir,
@@ -44,7 +44,7 @@ $configureArgs = @(
     "-DLLVM_LINK_LLVM_DYLIB=OFF"
 )
 
-if (-not $isWindows) {
+if (-not $runningOnWindows) {
     $configureArgs += "-DLLVM_ENABLE_TERMINFO=OFF"
 }
 
