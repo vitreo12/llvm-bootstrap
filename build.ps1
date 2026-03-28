@@ -17,6 +17,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
 $targets = "X86;AArch64;WebAssembly"
 $generator = "Ninja"
 $llvmSourceDir = Join-Path $SourceDir "llvm"
+$isWindows = $env:RUNNER_OS -eq "Windows" -or $IsWindows
 
 $configureArgs = @(
     "-S", $llvmSourceDir,
@@ -36,7 +37,6 @@ $configureArgs = @(
     "-DLLVM_ENABLE_ZLIB=OFF",
     "-DLLVM_ENABLE_ZSTD=OFF",
     "-DLLVM_ENABLE_LIBXML2=OFF",
-    "-DLLVM_ENABLE_TERMINFO=OFF",
     "-DLLVM_INSTALL_UTILS=ON",
     "-DBUILD_SHARED_LIBS=OFF",
     "-DLLVM_BUILD_LLVM_DYLIB=OFF",
@@ -44,12 +44,16 @@ $configureArgs = @(
     "-DLLVM_LINK_LLVM_DYLIB=OFF"
 )
 
+if (-not $isWindows) {
+    $configureArgs += "-DLLVM_ENABLE_TERMINFO=OFF"
+}
+
 cmake @configureArgs
 if ($LASTEXITCODE -ne 0) {
     throw "CMake configure failed with exit code $LASTEXITCODE"
 }
 
-cmake --build $BuildDir --config Release --target INSTALL
+cmake --build $BuildDir --config Release --target install
 if ($LASTEXITCODE -ne 0) {
     throw "CMake build failed with exit code $LASTEXITCODE"
 }
