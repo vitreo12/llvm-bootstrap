@@ -1,5 +1,8 @@
 name: Build LLVM Releases
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_dispatch:
     inputs:
@@ -38,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout bootstrap repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Read LLVM version
         id: version
@@ -59,11 +62,8 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v5
-
       - name: Checkout llvm-project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: llvm/llvm-project
           ref: ${{ steps.version.outputs.llvm_ref }}
@@ -121,7 +121,7 @@ jobs:
             "$PWD/artifacts"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: llvm-${{ matrix.platform }}-${{ matrix.arch }}
           path: artifacts/*
@@ -134,7 +134,7 @@ jobs:
 
     steps:
       - name: Checkout bootstrap repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Read LLVM version
         id: version
@@ -163,7 +163,7 @@ jobs:
           fi
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: dist
 
