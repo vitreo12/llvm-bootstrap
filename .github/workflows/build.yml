@@ -70,6 +70,12 @@ jobs:
           path: llvm-project
           fetch-depth: 1
 
+      - name: Set up MSVC developer command prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Build LLVM on Windows
         if: runner.os == 'Windows'
         shell: pwsh
