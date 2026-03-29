@@ -183,4 +183,5 @@ jobs:
           overwrite_files: true
           files: |
             dist/**/*.tar.xz
+            dist/**/*.zip
             dist/SHA256SUMS.txt

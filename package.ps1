@@ -15,14 +15,14 @@ $ErrorActionPreference = "Stop"
 
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
-$archiveName = "llvm-$Version-$Platform-$Architecture-static.tar.xz"
+$archiveName = "llvm-$Version-$Platform-$Architecture-static.zip"
 $archivePath = Join-Path $OutputDir $archiveName
 
 if (Test-Path $archivePath) {
     Remove-Item $archivePath -Force
 }
 
-tar -cJf $archivePath -C $InstallDir .
+Compress-Archive -Path (Join-Path $InstallDir "*") -DestinationPath $archivePath -CompressionLevel Optimal
 
 if (-not (Test-Path $archivePath)) {
     throw "Failed to produce archive at $archivePath"

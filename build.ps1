@@ -17,9 +17,12 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
 $targets = "X86;AArch64;WebAssembly"
 $generator = "Ninja"
 $llvmSourceDir = Join-Path $SourceDir "llvm"
-$runningOnWindows = $env:RUNNER_OS -eq "Windows" -or $IsWindows
+$runningOnWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+    [System.Runtime.InteropServices.OSPlatform]::Windows
+)
 
 $configureArgs = @(
+    "-Wno-dev",
     "-S", $llvmSourceDir,
     "-B", $BuildDir,
     "-G", $generator,

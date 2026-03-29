@@ -36,7 +36,6 @@ The workflow derives the release tag from that value:
 The builder is intentionally minimal and release-oriented:
 
 - `-DCMAKE_BUILD_TYPE=Release`
-- `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`
 - `-DLLVM_ENABLE_ASSERTIONS=OFF`
 - `-DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF`
 - `-DLLVM_INCLUDE_TESTS=OFF`
@@ -59,7 +58,7 @@ The optional external dependencies are disabled so the packaged binaries are les
 
 Each release publishes:
 
-- `llvm-<version>-windows-x64-static.tar.xz`
+- `llvm-<version>-windows-x64-static.zip`
 - `llvm-<version>-linux-x64-static.tar.xz`
 - `llvm-<version>-macos-arm64-static.tar.xz`
 - `SHA256SUMS.txt`
@@ -87,12 +86,26 @@ The workflow:
 1. Reads the pinned ref from [`llvm.version`](./llvm.version)
 2. Checks out `llvm/llvm-project` at that ref
 3. Builds and installs LLVM on each supported host runner
-4. Packages each install into `.tar.xz`
+4. Packages each install into its platform archive format
 5. Uploads intermediate workflow artifacts
 6. Generates `SHA256SUMS.txt`
 7. Publishes or updates the matching GitHub release
 
 ## Triggering builds
+
+## Local builds
+
+For a local Unix build that mirrors the CI flow:
+
+```bash
+./build_local.sh
+```
+
+For a local Windows build:
+
+```powershell
+./build_local.ps1
+```
 
 ### Manual trigger from GitHub Actions
 
