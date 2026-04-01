@@ -6,7 +6,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$BuildDir,
     [Parameter(Mandatory = $true)]
-    [string]$InstallDir
+    [string]$InstallDir,
+    [ValidateSet("Static", "Shared")]
+    [string]$Linkage = "Static",
+    [ValidateSet("MD", "MT")]
+    [string]$MsvcRuntime = "MT"
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,6 +24,13 @@ $llvmSourceDir = Join-Path $SourceDir "llvm"
 $runningOnWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
     [System.Runtime.InteropServices.OSPlatform]::Windows
 )
+
+$shared = $Linkage -eq "Shared"
+$cmakeRuntime = switch ($MsvcRuntime) {
+    "MT" { "MultiThreaded" }
+    "MD" { "MultiThreadedDLL" }
+    default { throw "Unsupported MSVC runtime mode: $MsvcRuntime" }
+}
 
 $configureArgs = @(
     "-Wno-dev",
@@ -38,14 +49,30 @@ $configureArgs = @(
     "-DLLVM_INCLUDE_DOCS=OFF",
     "-DLLVM_ENABLE_ZLIB=OFF",
     "-DLLVM_ENABLE_ZSTD=OFF",
-    "-DLLVM_ENABLE_LIBXML2=OFF",
-    "-DBUILD_SHARED_LIBS=OFF",
-    "-DLLVM_BUILD_LLVM_DYLIB=OFF",
-    "-DLLVM_BUILD_LLVM_C_DYLIB=OFF",
-    "-DLLVM_LINK_LLVM_DYLIB=OFF"
+    "-DLLVM_ENABLE_LIBXML2=OFF"
 )
 
-if (-not $runningOnWindows) {
+if ($shared) {
+    $configureArgs += @(
+        "-DBUILD_SHARED_LIBS=ON",
+        "-DLLVM_BUILD_LLVM_DYLIB=ON",
+        "-DLLVM_BUILD_LLVM_C_DYLIB=ON",
+        "-DLLVM_LINK_LLVM_DYLIB=ON"
+    )
+} else {
+    $configureArgs += @(
+        "-DBUILD_SHARED_LIBS=OFF",
+        "-DLLVM_BUILD_LLVM_DYLIB=OFF",
+        "-DLLVM_BUILD_LLVM_C_DYLIB=OFF",
+        "-DLLVM_LINK_LLVM_DYLIB=OFF"
+    )
+}
+
+if ($runningOnWindows) {
+    $configureArgs += @(
+        "-DCMAKE_MSVC_RUNTIME_LIBRARY=$cmakeRuntime"
+    )
+} else {
     $configureArgs += "-DLLVM_ENABLE_TERMINFO=OFF"
 }
 
@@ -64,7 +91,12 @@ if (-not (Test-Path $llvmConfig)) {
     throw "llvm-config.exe not found at $llvmConfig after build"
 }
 
-$coreLib = Join-Path $InstallDir "lib/LLVMCore.lib"
+$coreLib = if ($shared) {
+    Join-Path $InstallDir "lib/LLVM.lib"
+} else {
+    Join-Path $InstallDir "lib/LLVMCore.lib"
+}
+
 if (-not (Test-Path $coreLib)) {
-    throw "LLVMCore.lib not found at $coreLib after build"
+    throw "Expected LLVM library not found at $coreLib after build"
 }

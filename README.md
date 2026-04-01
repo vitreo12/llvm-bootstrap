@@ -51,8 +51,16 @@ The builder is intentionally minimal and release-oriented:
 - `-DLLVM_ENABLE_ZSTD=OFF`
 - `-DLLVM_ENABLE_LIBXML2=OFF`
 - `-DLLVM_ENABLE_TERMINFO=OFF`
+- macOS default deployment target: `11.0`
+- Windows default CRT mode: `-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded` (`/MT`)
 
 The optional external dependencies are disabled so the packaged binaries are less tied to whatever happens to be installed on the GitHub runner image.
+
+The current defaults are chosen to produce a better general-purpose package for downstream consumers:
+
+- Windows defaults to a static LLVM build with static MSVC runtime (`/MT`)
+- Linux and macOS default to static LLVM builds
+- every archive carries a build manifest so consumers can see exactly which toolchain produced it
 
 ## Release assets
 
@@ -70,7 +78,21 @@ Each archive contains a standard LLVM install root:
 - `lib/`
 - `share/`
 
-The install is meant to stay compatible with `LLVM_SYS_211_PREFIX` and static-linking.
+The install is meant to stay compatible with `LLVM_SYS_211_PREFIX`.
+
+Each archive also contains:
+
+- `share/llvm-bootstrap/BUILDINFO.json`
+
+That manifest records the package linkage/runtime mode and the build provenance used to produce it, including:
+
+- LLVM ref and package version
+- CMake and Ninja versions
+- compiler/linker version details
+- Windows toolset and SDK details when applicable
+- macOS deployment target when applicable
+
+The Windows archive is a better default package than the previous floating-runtime variant, but it is still not a guarantee of universal MSVC compatibility for all downstream static-link scenarios.
 
 ## GitHub Actions flow
 
@@ -90,6 +112,12 @@ The workflow:
 5. Uploads intermediate workflow artifacts
 6. Generates `SHA256SUMS.txt`
 7. Publishes or updates the matching GitHub release
+
+The CI defaults are configured through workflow env vars:
+
+- `LLVM_LINKAGE=Static`
+- `LLVM_WINDOWS_MSVC_RUNTIME=MT`
+- `LLVM_MACOS_DEPLOYMENT_TARGET=11.0`
 
 ## Triggering builds
 

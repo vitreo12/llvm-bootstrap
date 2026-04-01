@@ -2,6 +2,9 @@ name: Build LLVM Releases
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  LLVM_LINKAGE: Static
+  LLVM_WINDOWS_MSVC_RUNTIME: MT
+  LLVM_MACOS_DEPLOYMENT_TARGET: "11.0"
 
 on:
   workflow_dispatch:
@@ -84,7 +87,9 @@ jobs:
             -LlvmRef "${{ steps.version.outputs.llvm_ref }}" `
             -SourceDir "$PWD/llvm-project" `
             -BuildDir "$PWD/build" `
-            -InstallDir "$PWD/install"
+            -InstallDir "$PWD/install" `
+            -Linkage "${{ env.LLVM_LINKAGE }}" `
+            -MsvcRuntime "${{ env.LLVM_WINDOWS_MSVC_RUNTIME }}"
 
       - name: Build LLVM on Unix
         if: runner.os != 'Windows'
@@ -95,7 +100,9 @@ jobs:
             "${{ steps.version.outputs.llvm_ref }}" \
             "$PWD/llvm-project" \
             "$PWD/build" \
-            "$PWD/install"
+            "$PWD/install" \
+            "${{ env.LLVM_LINKAGE }}" \
+            "${{ env.LLVM_MACOS_DEPLOYMENT_TARGET }}"
 
       - name: Package on Windows
         if: runner.os == 'Windows'
@@ -106,7 +113,10 @@ jobs:
             -Platform "${{ matrix.platform }}" `
             -Architecture "${{ matrix.arch }}" `
             -InstallDir "$PWD/install" `
-            -OutputDir "$PWD/artifacts"
+            -OutputDir "$PWD/artifacts" `
+            -Linkage "${{ env.LLVM_LINKAGE }}" `
+            -MsvcRuntime "${{ env.LLVM_WINDOWS_MSVC_RUNTIME }}" `
+            -LlvmRef "${{ steps.version.outputs.llvm_ref }}"
 
       - name: Package on Unix
         if: runner.os != 'Windows'
@@ -118,7 +128,9 @@ jobs:
             "${{ matrix.platform }}" \
             "${{ matrix.arch }}" \
             "$PWD/install" \
-            "$PWD/artifacts"
+            "$PWD/artifacts" \
+            "${{ env.LLVM_LINKAGE }}" \
+            "${{ steps.version.outputs.llvm_ref }}"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6

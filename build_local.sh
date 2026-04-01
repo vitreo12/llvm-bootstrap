@@ -11,6 +11,8 @@ if [[ -z "$llvm_ref" ]]; then
 fi
 
 version="${llvm_ref#llvmorg-}"
+linkage="Static"
+macos_deployment_target="11.0"
 
 case "$(uname -s)" in
   Linux)
@@ -50,11 +52,15 @@ git clone --depth 1 --branch "$llvm_ref" https://github.com/llvm/llvm-project.gi
   "$llvm_ref" \
   "$repo_root/llvm-project" \
   "$repo_root/build" \
-  "$repo_root/install"
+  "$repo_root/install" \
+  "$linkage" \
+  "$macos_deployment_target"
 
 "$repo_root/package.sh" \
   "$version" \
   "$platform" \
   "$arch" \
   "$repo_root/install" \
-  "$repo_root/artifacts"
+  "$repo_root/artifacts" \
+  "$linkage" \
+  "$llvm_ref"

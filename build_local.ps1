@@ -48,6 +48,8 @@ Import-VsDevEnvironment
 
 $llvmRef = (Get-Content .\llvm.version).Trim()
 $version = $llvmRef -replace '^llvmorg-',''
+$linkage = "Static"
+$msvcRuntime = "MT"
 
 if (Test-Path .\llvm-project) { Remove-Item -Recurse -Force .\llvm-project }
 if (Test-Path .\build) { Remove-Item -Recurse -Force .\build }
@@ -60,11 +62,16 @@ git clone --depth 1 --branch $llvmRef https://github.com/llvm/llvm-project.git .
 	-LlvmRef $llvmRef `
 	-SourceDir "$PWD\llvm-project" `
 	-BuildDir "$PWD\build" `
-	-InstallDir "$PWD\install"
+	-InstallDir "$PWD\install" `
+	-Linkage $linkage `
+	-MsvcRuntime $msvcRuntime
 
 .\package.ps1 `
 	-Version $version `
 	-Platform windows `
 	-Architecture x64 `
 	-InstallDir "$PWD\install" `
-	-OutputDir "$PWD\artifacts"
+	-OutputDir "$PWD\artifacts" `
+	-Linkage $linkage `
+	-MsvcRuntime $msvcRuntime `
+	-LlvmRef $llvmRef
