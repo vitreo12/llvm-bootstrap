@@ -57,7 +57,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
 
 Import-VsDevEnvironment
 
-$repoRoot = Resolve-Path .
+$repoRoot = Resolve-Path $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($LlvmRef)) {
     $LlvmRef = (Get-Content (Join-Path $repoRoot "llvm.version")).Trim()
 }
@@ -92,7 +92,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Failed to clone llvm-project"
 }
 
-.\build.ps1 `
+& (Join-Path $repoRoot "build.ps1") `
     -LlvmRef $LlvmRef `
     -SourceDir $SourceDir `
     -BuildDir $BuildDir `
@@ -101,7 +101,7 @@ if ($LASTEXITCODE -ne 0) {
     -MsvcRuntime $MsvcRuntime
 
 if ($Package) {
-    .\package.ps1 `
+    & (Join-Path $repoRoot "package.ps1") `
         -Version $version `
         -Platform windows `
         -Architecture x64 `
