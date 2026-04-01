@@ -1,3 +1,16 @@
+param(
+    [string]$LlvmRef = "",
+    [string]$SourceDir = "",
+    [string]$BuildDir = "",
+    [string]$InstallDir = "",
+    [string]$OutputDir = "",
+    [ValidateSet("Static", "Shared")]
+    [string]$Linkage = "Static",
+    [ValidateSet("MD", "MT")]
+    [string]$MsvcRuntime = "MT",
+    [switch]$Package
+)
+
 function Import-VsDevEnvironment {
     $requiredTools = @("cl", "link", "rc", "mt")
     $missingTools = $requiredTools | Where-Object {
@@ -35,43 +48,66 @@ function Import-VsDevEnvironment {
         $name, $value = $line -split "=", 2
         Set-Item -Path "Env:$name" -Value $value
     }
+}
 
-    $missingTools = $requiredTools | Where-Object {
-        -not (Get-Command $_ -ErrorAction SilentlyContinue)
-    }
-    if ($missingTools.Count -ne 0) {
-        throw "Visual Studio environment initialized, but required tools are still missing: $($missingTools -join ', '). Install the Windows SDK and C++ build tools."
-    }
+$ErrorActionPreference = "Stop"
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+    $PSNativeCommandUseErrorActionPreference = $true
 }
 
 Import-VsDevEnvironment
 
-$llvmRef = (Get-Content .\llvm.version).Trim()
-$version = $llvmRef -replace '^llvmorg-',''
-$linkage = "Static"
-$msvcRuntime = "MT"
+$repoRoot = Resolve-Path .
+if ([string]::IsNullOrWhiteSpace($LlvmRef)) {
+    $LlvmRef = (Get-Content (Join-Path $repoRoot "llvm.version")).Trim()
+}
 
-if (Test-Path .\llvm-project) { Remove-Item -Recurse -Force .\llvm-project }
-if (Test-Path .\build) { Remove-Item -Recurse -Force .\build }
-if (Test-Path .\install) { Remove-Item -Recurse -Force .\install }
-if (Test-Path .\artifacts) { Remove-Item -Recurse -Force .\artifacts }
+if ([string]::IsNullOrWhiteSpace($LlvmRef)) {
+    throw "llvm.version is empty"
+}
 
-git clone --depth 1 --branch $llvmRef https://github.com/llvm/llvm-project.git .\llvm-project
+$version = $LlvmRef -replace '^llvmorg-',''
+$linkageLower = $Linkage.ToLowerInvariant()
+
+if ([string]::IsNullOrWhiteSpace($SourceDir)) {
+    $SourceDir = Join-Path $repoRoot "llvm-project"
+}
+if ([string]::IsNullOrWhiteSpace($BuildDir)) {
+    $BuildDir = Join-Path $repoRoot "build"
+}
+if ([string]::IsNullOrWhiteSpace($InstallDir)) {
+    $InstallDir = Join-Path $repoRoot "install"
+}
+if ([string]::IsNullOrWhiteSpace($OutputDir)) {
+    $OutputDir = Join-Path $repoRoot "artifacts"
+}
+
+if (Test-Path $SourceDir) { Remove-Item -Recurse -Force $SourceDir }
+if (Test-Path $BuildDir) { Remove-Item -Recurse -Force $BuildDir }
+if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir }
+if ($Package -and (Test-Path $OutputDir)) { Remove-Item -Recurse -Force $OutputDir }
+
+git clone --depth 1 --branch $LlvmRef https://github.com/llvm/llvm-project.git $SourceDir
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to clone llvm-project"
+}
 
 .\build.ps1 `
-	-LlvmRef $llvmRef `
-	-SourceDir "$PWD\llvm-project" `
-	-BuildDir "$PWD\build" `
-	-InstallDir "$PWD\install" `
-	-Linkage $linkage `
-	-MsvcRuntime $msvcRuntime
+    -LlvmRef $LlvmRef `
+    -SourceDir $SourceDir `
+    -BuildDir $BuildDir `
+    -InstallDir $InstallDir `
+    -Linkage $Linkage `
+    -MsvcRuntime $MsvcRuntime
 
-.\package.ps1 `
-	-Version $version `
-	-Platform windows `
-	-Architecture x64 `
-	-InstallDir "$PWD\install" `
-	-OutputDir "$PWD\artifacts" `
-	-Linkage $linkage `
-	-MsvcRuntime $msvcRuntime `
-	-LlvmRef $llvmRef
+if ($Package) {
+    .\package.ps1 `
+        -Version $version `
+        -Platform windows `
+        -Architecture x64 `
+        -InstallDir $InstallDir `
+        -OutputDir $OutputDir `
+        -Linkage $Linkage `
+        -MsvcRuntime $MsvcRuntime `
+        -LlvmRef $LlvmRef
+}

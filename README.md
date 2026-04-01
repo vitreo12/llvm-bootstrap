@@ -123,16 +123,29 @@ The CI defaults are configured through workflow env vars:
 
 ## Local builds
 
-For a local Unix build that mirrors the CI flow:
+`build_local.ps1` and `build_local.sh` are now the reusable source-bootstrap entrypoints for this repo.
+They:
 
-```bash
-./build_local.sh
-```
+- clone `llvm-project` at the requested ref
+- build and install LLVM to the requested directories
+- optionally package the install
 
-For a local Windows build:
+Examples:
+
+Windows:
 
 ```powershell
 ./build_local.ps1
+./build_local.ps1 -InstallDir C:\tmp\llvm-install
+./build_local.ps1 -Package
+```
+
+Unix:
+
+```bash
+./build_local.sh
+./build_local.sh --install-dir /tmp/llvm-install
+./build_local.sh --package
 ```
 
 ### Manual trigger from GitHub Actions

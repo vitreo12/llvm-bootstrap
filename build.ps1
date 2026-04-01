@@ -69,9 +69,7 @@ if ($shared) {
 }
 
 if ($runningOnWindows) {
-    $configureArgs += @(
-        "-DCMAKE_MSVC_RUNTIME_LIBRARY=$cmakeRuntime"
-    )
+    $configureArgs += "-DCMAKE_MSVC_RUNTIME_LIBRARY=$cmakeRuntime"
 } else {
     $configureArgs += "-DLLVM_ENABLE_TERMINFO=OFF"
 }
