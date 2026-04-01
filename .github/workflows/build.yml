@@ -73,23 +73,40 @@ jobs:
           path: llvm-project
           fetch-depth: 1
 
-      - name: Set up MSVC developer command prompt
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
       - name: Build LLVM on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          ./build.ps1 `
-            -LlvmRef "${{ steps.version.outputs.llvm_ref }}" `
-            -SourceDir "$PWD/llvm-project" `
-            -BuildDir "$PWD/build" `
-            -InstallDir "$PWD/install" `
-            -Linkage "${{ env.LLVM_LINKAGE }}" `
-            -MsvcRuntime "${{ env.LLVM_WINDOWS_MSVC_RUNTIME }}"
+          $vsDevCmd = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $vsDevCmd)) {
+            $vsDevCmd = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat"
+          }
+          if (-not (Test-Path $vsDevCmd)) {
+            $vsDevCmd = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+          }
+          if (-not (Test-Path $vsDevCmd)) {
+            throw "VsDevCmd.bat not found in Visual Studio 2022 Enterprise/Professional/Community."
+          }
+
+          $command = @(
+            "`"$vsDevCmd`"",
+            "-arch=x64",
+            "-host_arch=x64",
+            "&&",
+            "powershell",
+            "-NoLogo",
+            "-NoProfile",
+            "-ExecutionPolicy", "Bypass",
+            "-File", "`"$PWD/build.ps1`"",
+            "-LlvmRef", "`"${{ steps.version.outputs.llvm_ref }}`"",
+            "-SourceDir", "`"$PWD/llvm-project`"",
+            "-BuildDir", "`"$PWD/build`"",
+            "-InstallDir", "`"$PWD/install`"",
+            "-Linkage", "`"${{ env.LLVM_LINKAGE }}`"",
+            "-MsvcRuntime", "`"${{ env.LLVM_WINDOWS_MSVC_RUNTIME }}`""
+          ) -join " "
+
+          cmd.exe /d /s /c $command
 
       - name: Build LLVM on Unix
         if: runner.os != 'Windows'
