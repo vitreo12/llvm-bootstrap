@@ -77,15 +77,19 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $vsDevCmd = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
-          if (-not (Test-Path $vsDevCmd)) {
-            $vsDevCmd = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat"
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe not found at $vswhere"
           }
-          if (-not (Test-Path $vsDevCmd)) {
-            $vsDevCmd = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+
+          $vsInstallPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsInstallPath) {
+            throw "Visual Studio with MSVC tools not found"
           }
+
+          $vsDevCmd = Join-Path $vsInstallPath "Common7\Tools\VsDevCmd.bat"
           if (-not (Test-Path $vsDevCmd)) {
-            throw "VsDevCmd.bat not found in Visual Studio 2022 Enterprise/Professional/Community."
+            throw "VsDevCmd.bat not found at $vsDevCmd"
           }
 
           $command = @(
