@@ -92,25 +92,32 @@ jobs:
             throw "VsDevCmd.bat not found at $vsDevCmd"
           }
 
-          $command = @(
-            "`"$vsDevCmd`"",
-            "-arch=x64",
-            "-host_arch=x64",
-            "&&",
-            "powershell",
-            "-NoLogo",
-            "-NoProfile",
-            "-ExecutionPolicy", "Bypass",
-            "-File", "`"$PWD/build.ps1`"",
-            "-LlvmRef", "`"${{ steps.version.outputs.llvm_ref }}`"",
-            "-SourceDir", "`"$PWD/llvm-project`"",
-            "-BuildDir", "`"$PWD/build`"",
-            "-InstallDir", "`"$PWD/install`"",
-            "-Linkage", "`"${{ env.LLVM_LINKAGE }}`"",
-            "-MsvcRuntime", "`"${{ env.LLVM_WINDOWS_MSVC_RUNTIME }}`""
-          ) -join " "
+          $captureEnvScript = Join-Path $env:RUNNER_TEMP "capture-msvc-env.cmd"
+          @"
+          @echo off
+          call "$vsDevCmd" -arch=x64 -host_arch=x64 >nul
+          if errorlevel 1 exit /b %errorlevel%
+          set
+          "@ | Set-Content -Path $captureEnvScript -Encoding ascii
 
-          cmd.exe /d /s /c $command
+          $msvcEnv = cmd.exe /d /c $captureEnvScript
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to initialize MSVC build environment via VsDevCmd.bat"
+          }
+
+          foreach ($line in $msvcEnv) {
+            if ($line -match '^(.*?)=(.*)$') {
+              [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+            }
+          }
+
+          & .\build.ps1 `
+            -LlvmRef "${{ steps.version.outputs.llvm_ref }}" `
+            -SourceDir "$PWD/llvm-project" `
+            -BuildDir "$PWD/build" `
+            -InstallDir "$PWD/install" `
+            -Linkage "${{ env.LLVM_LINKAGE }}" `
+            -MsvcRuntime "${{ env.LLVM_WINDOWS_MSVC_RUNTIME }}"
 
       - name: Build LLVM on Unix
         if: runner.os != 'Windows'
