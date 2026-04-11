@@ -125,7 +125,7 @@ fi
 
 git clone --depth 1 --branch "$llvm_ref" https://github.com/llvm/llvm-project.git "$source_dir"
 
-"$repo_root/build.sh" \
+bash "$repo_root/build.sh" \
   "$llvm_ref" \
   "$source_dir" \
   "$build_dir" \
@@ -134,7 +134,7 @@ git clone --depth 1 --branch "$llvm_ref" https://github.com/llvm/llvm-project.gi
   "11.0"
 
 if [[ $package -eq 1 ]]; then
-  "$repo_root/package.sh" \
+  bash "$repo_root/package.sh" \
     "$version" \
     "$platform" \
     "$arch" \
